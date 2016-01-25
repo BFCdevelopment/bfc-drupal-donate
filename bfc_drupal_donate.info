@@ -5,3 +5,4 @@ dependencies[] = rules
 dependencies[] = webform_rules
 dependencies[] = webform
 dependencies[] = php
+dependencies[] = jquery_update

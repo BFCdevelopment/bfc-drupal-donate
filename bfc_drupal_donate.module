@@ -6,9 +6,9 @@
  */
 
 function bfc_drupal_donate_form_alter(&$form, &$form_state, $form_id) {
-	if($form['#form_id'] == "webform_client_form_76") :
+	if($form['#form_id'] == "webform_client_form_1") :
 		drupal_add_js('https://js.stripe.com/v2/', 'external');
-		drupal_add_js(drupal_get_path('module', 'bfc_drupal_donate') . "bfc_drupal_donate.js", 'file');
+		drupal_add_js(drupal_get_path('module', 'bfc_drupal_donate') . "/bfc_drupal_donate.js", 'file');
 		$form['submitted']['payment_information']['credit_card_number']['#attributes']['data-stripe'] = "number";
 		$form['submitted']['payment_information']['cvc']['#attributes']['data-stripe'] = "cvc";
 		$form['submitted']['payment_information']['expiration_month']['#attributes']['data-stripe'] = "exp_month";
@@ -16,29 +16,4 @@ function bfc_drupal_donate_form_alter(&$form, &$form_state, $form_id) {
 	endif;
 }
 
-function bfc_drupal_donate_default_rules_configuration() {
-	$configs = array();
-
-	$rule = '{ "rules_charge_credit_card_after_registration_form_submit" : {
-    "LABEL" : "Charge Credit Card after Donate form Submit",
-    "PLUGIN" : "reaction rule",
-    "OWNER" : "rules",
-    "REQUIRES" : [ "webform_rules", "php", "rules" ],
-    "ON" : { "webform_rules_submit" : [] },
-    "IF" : [
-      { "webform_has_id" : {
-          "form_id" : [ "form-id" ],
-          "selected_webform" : { "value" : { "webform-client-form-76" : "webform-client-form-76" } }
-        }
-      }
-    ],
-    "DO" : [
-      { "php_eval" : { "code" : "require_once(\u0027sites\/all\/modules\/honeymoon_custom\/stripe-php-library\/init.php\u0027);\r\n\r\n\/\/ Set your secret key: remember to change this to your live secret key in production\r\n\/\/ See your keys here https:\/\/dashboard.stripe.com\/account\/apikeys\r\n\\Stripe\\Stripe::setApiKey(\u0022sk_live_ElEEYxjNKjvhJgzEWr7iv6tX\u0022);\r\n\r\n\/\/ Get the credit card details submitted by the form\r\n$token = $data[\u0027components\u0027][\u0027stripe_token\u0027][\u0027value\u0027][0];\r\n$amount = $data[\u0027components\u0027][\u0027amount\u0027][\u0027value\u0027][0] . \u002200\u0022;\r\n\r\n\/\/ Create the charge on Stripe\u0027s servers - this will charge the user\u0027s card\r\ntry {\r\n$charge = \\Stripe\\Charge::create(array(\r\n  \u0022amount\u0022 =\u003E $amount, \/\/ amount in cents, again\r\n  \u0022currency\u0022 =\u003E \u0022usd\u0022,\r\n  \u0022source\u0022 =\u003E $token,\r\n  \u0022description\u0022 =\u003E \u0022Example charge\u0022)\r\n);\r\n} catch(\\Stripe\\Error\\Card $e) {\r\n  drupal_set_message(\u0022We are sorry, your card has been declined. Please return to the form and try again.\u0022, \u0022error\u0022);\r\n}\r\n" } }
-    ]
-  }
-}';
-	$configs['bfc_drupal_charge_card'] = entity_import('rules_config',$rule);
-	return $configs;
-
-}
 ?>
