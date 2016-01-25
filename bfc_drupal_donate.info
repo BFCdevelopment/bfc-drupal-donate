@@ -1,0 +1,7 @@
+name = BFC Drupal Donate
+description = Integrates Stripe and the Webform modules so admins can create donate forms using the Drupal interface.
+core = 7.x
+dependencies[] = rules
+dependencies[] = webform_rules
+dependencies[] = webform
+dependencies[] = php
