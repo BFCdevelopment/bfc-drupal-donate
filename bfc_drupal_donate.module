@@ -1,19 +1,250 @@
 <?php
 
-/* Honeymoon Israel Custom Module
- * At first, this is generally for Stripe-Drupal integration
- * to run the Registration form. Ultimately, perhaps more?
+/* Stripe Donate Form Custom Module
+ * Easy Stripe integration!
  */
 
+function bfc_drupal_donate_menu() {
+	$items = array();
+
+	$items['admin/config/content/bfc_donate'] = array(
+		'title' => 'Donate Form Configuration',
+		'description' => 'Configuration settings for Stripe-integrated donate form',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('bfc_drupal_donate_form'),
+		'access arguments' => array('access administration pages'),
+		'type' => MENU_NORMAL_ITEM,
+	);
+
+	return $items;
+}
+
+function bfc_drupal_donate_form($form, &$form_state) {
+	//t('Enter your Stripe API keys below. See your keys <a href="https://dashboard.stripe.com/account/apikeys" target="_blank">here</a>');
+	
+	$form['stripe_secret_key'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Stripe Secret Key'),
+		'#default_value' => variable_get('stripe_secret_key'),
+		'#description' => t('Enter the Stripe Secret API key here. Remember to change this to your live secret key in production.'),
+		'#required' =>TRUE,	
+	);
+
+	$form['stripe_publishable_key'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Stripe Publishable Key'),
+		'#default_value' => variable_get('stripe_publishable_key'),
+		'#description' => t('Enter the Stripe Publishable API key here. Remember to change this to your live publishable key in production.'),
+		'#required' =>TRUE,	
+	);
+
+	$form['form_options'] = array(
+	    '#type' => 'radios',
+	    '#title' => t('Form Options'),
+	    '#options' => array(
+	      1 => t('Use the default form'),
+	      0 => t('Use a custom form'),
+	    ),
+	    '#default_value' => variable_get('form_options', 1),
+	    '#description' => t('The default donate form contains the following fields: Name, Donation Amount, Credit Card Number, Expiration Month and Year, and CVC number. If you require alternate fields, you may create a custom webform to use instead.'),
+	  );
+
+	$form['custom_form_id'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Webform ID'),
+		'#default_value' => variable_get('custom_form_id'),
+		'#maxlength' => 6,
+		'#description' => t('Enter the ID number of your custom webform. The number can be found in the url of the edit webform page.'),
+		'#states' => array(
+			'visible' => array(
+				':input[name="form_options"]' => array('value' => 0),
+			),
+		),
+	);
+
+	return system_settings_form($form);
+}
+
 function bfc_drupal_donate_form_alter(&$form, &$form_state, $form_id) {
-	if($form['#form_id'] == "webform_client_form_1") :
+	$custom_form = "webform_client_form_" . variable_get('custom_form_id', '1');
+	if($form['#form_id'] == $custom_form ) :
 		drupal_add_js('https://js.stripe.com/v2/', 'external');
 		drupal_add_js(drupal_get_path('module', 'bfc_drupal_donate') . "/bfc_drupal_donate.js", 'file');
 		$form['submitted']['payment_information']['credit_card_number']['#attributes']['data-stripe'] = "number";
 		$form['submitted']['payment_information']['cvc']['#attributes']['data-stripe'] = "cvc";
 		$form['submitted']['payment_information']['expiration_month']['#attributes']['data-stripe'] = "exp_month";
 		$form['submitted']['payment_information']['expiration_year']['#attributes']['data-stripe'] = "exp_year";
+
+		drupal_add_js(array('bfc_drupal_donate' => array('stripe_publishable_key' => variable_get('stripe_publishable_key'))), 'setting');
+		drupal_add_js(array('bfc_drupal_donate' => array('custom_form_id' => variable_get('custom_form_id', '1'))), 'setting');
+
 	endif;
 }
 
-?>
+function bfc_drupal_donate_form_submit(&$form, &$form_state, $form_id) {
+	$custom_form = "webform_client_form_" . variable_get('custom_form_id', '1');
+	$skey = variable_get('stripe_secret_key');
+	if($form['#form_id'] == $custom_form ) :
+		require_once('stripe-php-library/init.php');
+
+		// Set your secret key: remember to change this to your live secret key in production
+		\Stripe\Stripe::setApiKey($skey);
+
+		// Get the credit card details submitted by the form
+		$token = $data['components']['stripe_token']['value'][0];
+		$amount = $data['components']['amount']['value'][0];
+
+		// Create the charge on Stripe's servers - this will charge the user's card
+		try {
+		$charge = \Stripe\Charge::create(array(
+		  "amount" => $amount, // amount in cents, again
+		  "currency" => "usd",
+		  "source" => $token,
+		  "description" => "Example charge")
+		);
+		} catch(\Stripe\Error\Card $e) {
+		  drupal_set_message("We are sorry, your card has been declined. Please return to the form and try again.", "error");
+		}
+
+	endif;
+}
+
+function bfc_drupal_donate_enable() {
+	$node = new stdClass();
+	$node->type = 'webform';
+	node_object_prepare($node);
+	$node->title = 'Donate';
+	$node->language = 'en';
+	$node->body[LANGUAGE_NONE][0]['value']   = '';
+	$node->body[LANGUAGE_NONE][0]['format']  = 'full_html';
+	$node->uid = 1;
+	$node->promote = 0;
+	$node->comment = 0;
+
+	// Create the webform components.
+	$components = array(
+	 array(
+	  'name' => 'First name',
+	  'form_key' => 'first_name',
+	  'type' => 'textfield',
+	  'mandatory' => 1,
+	  'weight' => 10,
+	  'pid' => 0,
+	  'extra' => array(
+	    'title_display' => 'inline',
+	    'private' => 0,
+	  ),
+	),
+	array(
+	  'name' => 'Last name',
+	  'form_key' => 'last_name',
+	  'type' => 'textfield',
+	  'mandatory' => 1,
+	  'weight' => 5,
+	  'pid' => 0,
+	  'extra' => array(
+	    'title_display' => 'inline',
+	    'private' => 0,
+	  ),
+	),
+	array(
+	  'name' => 'Credit Card Number',
+	  'form_key' => 'credit_card_number',
+	  'type' => 'textfield',
+	  'mandatory' => 1,
+	  'weight' => 15,
+	  'pid' => 0,
+	  'extra' => array(
+	    'title_display' => 'inline',
+	    'private' => 0,
+	  ),
+	),
+	array(
+	  'name' => 'Expiration Month',
+	  'form_key' => 'exp_month',
+	  'type' => 'textfield',
+	  'mandatory' => 1,
+	  'weight' => 20,
+	  'pid' => 0,
+	  'extra' => array(
+	    'title_display' => 'inline',
+	    'private' => 0,
+	  ),
+	),
+	array(
+	  'name' => 'Expiration Year',
+	  'form_key' => 'exp_year',
+	  'type' => 'textfield',
+	  'mandatory' => 1,
+	  'weight' => 25,
+	  'pid' => 0,
+	  'extra' => array(
+	    'title_display' => 'inline',
+	    'private' => 0,
+	  ),
+	),
+	array(
+	  'name' => 'CVC',
+	  'form_key' => 'cvc',
+	  'type' => 'textfield',
+	  'mandatory' => 1,
+	  'weight' => 30,
+	  'pid' => 0,
+	  'extra' => array(
+	    'title_display' => 'inline',
+	    'private' => 0,
+	  ),
+	),
+	array(
+	  'name' => 'Stripe Token',
+	  'form_key' => 'stripe_token',
+	  'type' => 'textfield',
+	  'mandatory' => 0,
+	  'weight' => 35,
+	  'pid' => 0,
+	  'extra' => array(
+	    'title_display' => 'inline',
+	    'private' => 0,
+	    ),
+	  ),
+	  array(
+	    'name' => 'Error Markup',
+	    'form_key' => 'error_markup',
+	    'type' => 'markup',
+	    'mandatory' => 0,
+	    'weight' => 40,
+	    'pid' => 0,
+	    'extra' => array(
+	      'title_display' => 'inline',
+	      'private' => 0,
+	      'format'=> 'full_html',
+	    ),
+	  ),
+	);
+
+	// Attach the webform to the node.
+	$node->webform = array(
+	  'confirmation' => '',
+	  'confirmation_format' => NULL,
+	  'redirect_url' => '',
+	  'status' => '1',
+	  'block' => '0',
+	  'teaser' => '0',
+	  'allow_draft' => '0',
+	  'auto_save' => '0',
+	  'submit_notice' => '1',
+	  'submit_text' => '',
+	  'submit_limit' => '-1', // User can submit more than once.
+	  'submit_interval' => '-1',
+	  'total_submit_limit' => '-1',
+	  'total_submit_interval' => '-1',
+	  'record_exists' => TRUE,
+	  'roles' => array(
+	    0 => '1', // Anonymous user can submit this webform.
+	  ),
+	  'components' => $components,
+	);
+
+	// Save the node.
+	node_save($node);
+}
