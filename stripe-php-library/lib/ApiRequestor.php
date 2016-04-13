@@ -44,7 +44,7 @@ class ApiRequestor
      * @param array|null $params
      * @param array|null $headers
      *
-     * @return array An array whose first element is the response and second
+     * @return array An array whose first element is an API response and second
      *    element is the API key used to make the request.
      */
     public function request($method, $url, $params = null, $headers = null)
@@ -57,7 +57,8 @@ class ApiRequestor
         }
         list($rbody, $rcode, $rheaders, $myApiKey) =
         $this->_requestRaw($method, $url, $params, $headers);
-        $resp = $this->_interpretResponse($rbody, $rcode, $rheaders);
+        $json = $this->_interpretResponse($rbody, $rcode, $rheaders);
+        $resp = new ApiResponse($rbody, $rcode, $rheaders, $json);
         return array($resp, $myApiKey);
     }
 
@@ -72,6 +73,8 @@ class ApiRequestor
      *    permissions.
      * @throws Error\Card if the error is the error code is 402 (payment
      *    required)
+     * @throws Error\RateLimit if the error is caused by too many requests
+     *    hitting the API.
      * @throws Error\Api otherwise.
      */
     public function handleApiError($rbody, $rcode, $rheaders, $resp)
@@ -89,6 +92,8 @@ class ApiRequestor
 
         switch ($rcode) {
             case 400:
+                // 'rate_limit' code is deprecated, but left here for backwards compatibility
+                // for API versions earlier than 2015-09-08
                 if ($code == 'rate_limit') {
                     throw new Error\RateLimit($msg, $param, $rcode, $rbody, $resp, $rheaders);
                 }
@@ -100,6 +105,8 @@ class ApiRequestor
                 throw new Error\Authentication($msg, $rcode, $rbody, $resp, $rheaders);
             case 402:
                 throw new Error\Card($msg, $param, $code, $rcode, $rbody, $resp, $rheaders);
+            case 429:
+                throw new Error\RateLimit($msg, $param, $rcode, $rbody, $resp, $rheaders);
             default:
                 throw new Error\Api($msg, $rcode, $rbody, $resp, $rheaders);
         }
@@ -139,6 +146,11 @@ class ApiRequestor
         if (Stripe::$apiVersion) {
             $defaultHeaders['Stripe-Version'] = Stripe::$apiVersion;
         }
+
+        if (Stripe::$accountId) {
+            $defaultHeaders['Stripe-Account'] = Stripe::$accountId;
+        }
+
         $hasFile = false;
         $hasCurlFile = class_exists('\CURLFile', false);
         foreach ($params as $k => $v) {

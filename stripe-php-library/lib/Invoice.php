@@ -30,7 +30,7 @@ class Invoice extends ApiResource
      * @param array|null $params
      * @param array|string|null $opts
      *
-     * @return Invoice[]
+     * @return Collection of Invoices
      */
     public static function all($params = null, $opts = null)
     {
@@ -47,7 +47,9 @@ class Invoice extends ApiResource
     {
         $url = static::classUrl() . '/upcoming';
         list($response, $opts) = static::_staticRequest('get', $url, $params, $opts);
-        return Util\Util::convertToStripeObject($response, $opts);
+        $obj = Util\Util::convertToStripeObject($response->json, $opts);
+        $obj->setLastResponse($response);
+        return $obj;
     }
 
     /**

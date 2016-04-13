@@ -20,7 +20,7 @@ function bfc_drupal_donate_menu() {
 }
 
 function bfc_drupal_donate_form($form, &$form_state) {
-	//t('Enter your Stripe API keys below. See your keys <a href="https://dashboard.stripe.com/account/apikeys" target="_blank">here</a>');
+	t('Enter your Stripe API keys below. See your keys <a href="https://dashboard.stripe.com/account/apikeys" target="_blank">here</a>');
 	
 	$form['stripe_secret_key'] = array(
 		'#type' => 'textfield',
@@ -78,10 +78,12 @@ function bfc_drupal_donate_form_alter(&$form, &$form_state, $form_id) {
 		drupal_add_js(array('bfc_drupal_donate' => array('stripe_publishable_key' => variable_get('stripe_publishable_key'))), 'setting');
 		drupal_add_js(array('bfc_drupal_donate' => array('custom_form_id' => variable_get('custom_form_id', '1'))), 'setting');
 
+		$form['#submit'][] = 'bfc_drupal_donate_submit_handler';
+
 	endif;
 }
 
-function bfc_drupal_donate_form_submit(&$form, &$form_state, $form_id) {
+function bfc_drupal_donate_submit_handler(&$form, &$form_state) {
 	$custom_form = "webform_client_form_" . variable_get('custom_form_id', '1');
 	$skey = variable_get('stripe_secret_key');
 	if($form['#form_id'] == $custom_form ) :
@@ -91,8 +93,10 @@ function bfc_drupal_donate_form_submit(&$form, &$form_state, $form_id) {
 		\Stripe\Stripe::setApiKey($skey);
 
 		// Get the credit card details submitted by the form
-		$token = $data['components']['stripe_token']['value'][0];
-		$amount = $data['components']['amount']['value'][0];
+		$token = $form['submitted']['stripe_token']['#value'];
+		$amount = ($form['submitted']['amount']['#value']) * 100;
+		$custname = $form['submitted']['name']['#value'];
+		$email = $form['submitted']['email']['#value'];
 
 		// Create the charge on Stripe's servers - this will charge the user's card
 		try {
@@ -100,10 +104,15 @@ function bfc_drupal_donate_form_submit(&$form, &$form_state, $form_id) {
 		  "amount" => $amount, // amount in cents, again
 		  "currency" => "usd",
 		  "source" => $token,
+		  "metadata" => array(
+			  	"name" => $custname,
+			  ),
+		  "receipt_email" => $email,
 		  "description" => "Example charge")
 		);
 		} catch(\Stripe\Error\Card $e) {
 		  drupal_set_message("We are sorry, your card has been declined. Please return to the form and try again.", "error");
+
 		}
 
 	endif;
