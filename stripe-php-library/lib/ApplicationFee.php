@@ -30,7 +30,7 @@ class ApplicationFee extends ApiResource
      * @param array|null $params
      * @param array|string|null $opts
      *
-     * @return ApplicationFee[]
+     * @return Collection of ApplicationFees
      */
     public static function all($params = null, $opts = null)
     {
@@ -45,9 +45,8 @@ class ApplicationFee extends ApiResource
      */
     public function refund($params = null, $opts = null)
     {
-        $url = $this->instanceUrl() . '/refund';
-        list($response, $opts) = $this->_request('post', $url, $params, $opts);
-        $this->refreshFrom($response, $opts);
+        $this->refunds->create($params, $opts);
+        $this->refresh();
         return $this;
     }
 }

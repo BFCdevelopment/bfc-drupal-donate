@@ -4,7 +4,7 @@
 [![Latest Stable Version](https://poser.pugx.org/stripe/stripe-php/v/stable.svg)](https://packagist.org/packages/stripe/stripe-php)
 [![Total Downloads](https://poser.pugx.org/stripe/stripe-php/downloads.svg)](https://packagist.org/packages/stripe/stripe-php)
 [![License](https://poser.pugx.org/stripe/stripe-php/license.svg)](https://packagist.org/packages/stripe/stripe-php)
-[![Code Coverage](https://coveralls.io/repos/stripe/stripe-php/badge.png?branch=master)](https://coveralls.io/r/stripe/stripe-php?branch=master)
+[![Code Coverage](https://coveralls.io/repos/stripe/stripe-php/badge.svg?branch=master)](https://coveralls.io/r/stripe/stripe-php?branch=master)
 
 You can sign up for a Stripe account at https://stripe.com.
 
@@ -14,36 +14,36 @@ PHP 5.3.3 and later.
 
 ## Composer
 
-You can install the bindings via [Composer](http://getcomposer.org/). Add this to your `composer.json`:
+You can install the bindings via [Composer](http://getcomposer.org/). Run the following command:
 
-    {
-      "require": {
-        "stripe/stripe-php": "2.*"
-      }
-    }
-
-Then install via:
-
-    composer install
+```bash
+composer require stripe/stripe-php
+```
 
 To use the bindings, use Composer's [autoload](https://getcomposer.org/doc/00-intro.md#autoloading):
 
-    require_once('vendor/autoload.php');
+```php
+require_once('vendor/autoload.php');
+```
 
 ## Manual Installation
 
 If you do not wish to use Composer, you can download the [latest release](https://github.com/stripe/stripe-php/releases). Then, to use the bindings, include the `init.php` file.
 
-    require_once('/path/to/stripe-php/init.php');
+```php
+require_once('/path/to/stripe-php/init.php');
+```
 
 ## Getting Started
 
 Simple usage looks like:
 
-    \Stripe\Stripe::setApiKey('d8e8fca2dc0f896fd7cb4cb0031ba249');
-    $myCard = array('number' => '4242424242424242', 'exp_month' => 5, 'exp_year' => 2015);
-    $charge = \Stripe\Charge::create(array('card' => $myCard, 'amount' => 2000, 'currency' => 'usd'));
-    echo $charge;
+```php
+\Stripe\Stripe::setApiKey('d8e8fca2dc0f896fd7cb4cb0031ba249');
+$myCard = array('number' => '4242424242424242', 'exp_month' => 8, 'exp_year' => 2018);
+$charge = \Stripe\Charge::create(array('card' => $myCard, 'amount' => 2000, 'currency' => 'usd'));
+echo $charge;
+```
 
 ## Documentation
 
@@ -55,17 +55,65 @@ If you are using PHP 5.2, you can download v1.18.0 ([zip](https://github.com/str
 
 This legacy version may be included via `require_once("/path/to/stripe-php/lib/Stripe.php");`, and used like:
 
-    Stripe::setApiKey('d8e8fca2dc0f896fd7cb4cb0031ba249');
-    $myCard = array('number' => '4242424242424242', 'exp_month' => 5, 'exp_year' => 2015);
-    $charge = Stripe_Charge::create(array('card' => $myCard, 'amount' => 2000, 'currency' => 'usd'));
-    echo $charge;
+```php
+Stripe::setApiKey('d8e8fca2dc0f896fd7cb4cb0031ba249');
+$myCard = array('number' => '4242424242424242', 'exp_month' => 8, 'exp_year' => 2018);
+$charge = Stripe_Charge::create(array('card' => $myCard, 'amount' => 2000, 'currency' => 'usd'));
+echo $charge;
+```
+
+## Custom Request Timeouts
+
+*NOTE:* We do not recommend decreasing the timeout for non-read-only calls (e.g. charge creation), since even if you locally timeout, the request on Stripe's side can still complete. If you are decreasing timeouts on these calls, make sure to use [idempotency tokens](https://stripe.com/docs/api/php#idempotent_requests) to avoid executing the same transaction twice as a result of timeout retry logic.
+
+To modify request timeouts (connect or total, in seconds) you'll need to tell the API client to use a CurlClient other than its default. You'll set the timeouts in that CurlClient.
+
+```php
+// set up your tweaked Curl client
+$curl = new \Stripe\HttpClient\CurlClient();
+$curl->setTimeout(10); // default is \Stripe\HttpClient\CurlClient::DEFAULT_TIMEOUT
+$curl->setConnectTimeout(5); // default is \Stripe\HttpClient\CurlClient::DEFAULT_CONNECT_TIMEOUT
+
+echo $curl->getTimeout(); // 10
+echo $curl->getConnectTimeout(); // 5
+
+// tell Stripe to use the tweaked client
+\Stripe\ApiRequestor::setHttpClient($curl);
+
+// use the Stripe API client as you normally would
+```
+
+## Custom cURL Options (e.g. proxies)
+
+Need to set a proxy for your requests? Pass in the requisite `CURLOPT_*` array to the CurlClient constructor, using the same syntax as `curl_stopt_array()`. This will set the default cURL options for each HTTP request made by the SDK, though many more common options (e.g. timeouts; see above on how to set those) will be overridden by the client even if set here.
+
+```php
+// set up your tweaked Curl client
+$curl = new \Stripe\HttpClient\CurlClient(array(CURLOPT_PROXY => 'proxy.local:80'));
+// tell Stripe to use the tweaked client
+\Stripe\ApiRequestor::setHttpClient($curl);
+```
+
+Alternately, a callable can be passed to the CurlClient constructor that returns the above array based on request inputs. See `testDefaultOptions()` in `tests/CurlClientTest.php` for an example of this behavior. Note that the callable is called at the beginning of every API request, before the request is sent.
+
+## Development
+
+Install dependencies:
+
+``` bash
+composer install
+```
 
 ## Tests
 
-In order to run tests first install [PHPUnit](http://packagist.org/packages/phpunit/phpunit) via [Composer](http://getcomposer.org/):
+Install dependencies as mentioned above (which will resolve [PHPUnit](http://packagist.org/packages/phpunit/phpunit)), then you can run the test suite:
 
-    composer update --dev
+```bash
+./vendor/bin/phpunit
+```
 
-To run the test suite:
+Or to run an individual test file:
 
-    ./vendor/bin/phpunit
+```bash
+./vendor/bin/phpunit tests/UtilTest.php
+```

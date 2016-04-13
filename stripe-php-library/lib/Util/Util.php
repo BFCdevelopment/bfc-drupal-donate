@@ -2,7 +2,7 @@
 
 namespace Stripe\Util;
 
-use Stripe\Object;
+use Stripe\StripeObject;
 
 abstract class Util
 {
@@ -41,7 +41,7 @@ abstract class Util
             if ($k[0] == '_') {
                 continue;
             }
-            if ($v instanceof Object) {
+            if ($v instanceof StripeObject) {
                 $results[$k] = $v->__toArray(true);
             } elseif (is_array($v)) {
                 $results[$k] = self::convertStripeObjectToArray($v);
@@ -57,7 +57,7 @@ abstract class Util
      *
      * @param array $resp The response from the Stripe API.
      * @param array $opts
-     * @return Object|array
+     * @return StripeObject|array
      */
     public static function convertToStripeObject($resp, $opts)
     {
@@ -68,8 +68,10 @@ abstract class Util
             'balance_transaction' => 'Stripe\\BalanceTransaction',
             'card' => 'Stripe\\Card',
             'charge' => 'Stripe\\Charge',
+            'country_spec' => 'Stripe\\CountrySpec',
             'coupon' => 'Stripe\\Coupon',
             'customer' => 'Stripe\\Customer',
+            'dispute' => 'Stripe\\Dispute',
             'list' => 'Stripe\\Collection',
             'invoice' => 'Stripe\\Invoice',
             'invoiceitem' => 'Stripe\\InvoiceItem',
@@ -77,9 +79,12 @@ abstract class Util
             'file' => 'Stripe\\FileUpload',
             'token' => 'Stripe\\Token',
             'transfer' => 'Stripe\\Transfer',
+            'order' => 'Stripe\\Order',
             'plan' => 'Stripe\\Plan',
+            'product' => 'Stripe\\Product',
             'recipient' => 'Stripe\\Recipient',
             'refund' => 'Stripe\\Refund',
+            'sku' => 'Stripe\\SKU',
             'subscription' => 'Stripe\\Subscription',
             'fee_refund' => 'Stripe\\ApplicationFeeRefund',
             'bitcoin_receiver' => 'Stripe\\BitcoinReceiver',
@@ -95,7 +100,7 @@ abstract class Util
             if (isset($resp['object']) && is_string($resp['object']) && isset($types[$resp['object']])) {
                 $class = $types[$resp['object']];
             } else {
-                $class = 'Stripe\\Object';
+                $class = 'Stripe\\StripeObject';
             }
             return $class::constructFrom($resp, $opts);
         } else {

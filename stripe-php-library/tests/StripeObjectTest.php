@@ -2,11 +2,11 @@
 
 namespace Stripe;
 
-class ObjectTest extends TestCase
+class StripeObjectTest extends TestCase
 {
     public function testArrayAccessorsSemantics()
     {
-        $s = new Object();
+        $s = new StripeObject();
         $s['foo'] = 'a';
         $this->assertSame($s['foo'], 'a');
         $this->assertTrue(isset($s['foo']));
@@ -16,7 +16,7 @@ class ObjectTest extends TestCase
 
     public function testNormalAccessorsSemantics()
     {
-        $s = new Object();
+        $s = new StripeObject();
         $s->foo = 'a';
         $this->assertSame($s->foo, 'a');
         $this->assertTrue(isset($s->foo));
@@ -26,7 +26,7 @@ class ObjectTest extends TestCase
 
     public function testArrayAccessorsMatchNormalAccessors()
     {
-        $s = new Object();
+        $s = new StripeObject();
         $s->foo = 'a';
         $this->assertSame($s['foo'], 'a');
 
@@ -36,14 +36,14 @@ class ObjectTest extends TestCase
 
     public function testKeys()
     {
-        $s = new Object();
+        $s = new StripeObject();
         $s->foo = 'a';
         $this->assertSame($s->keys(), array('foo'));
     }
 
     public function testToArray()
     {
-        $s = new Object();
+        $s = new StripeObject();
         $s->foo = 'a';
 
         $converted = $s->__toArray();
@@ -55,8 +55,8 @@ class ObjectTest extends TestCase
 
     public function testRecursiveToArray()
     {
-        $s = new Object();
-        $z = new Object();
+        $s = new StripeObject();
+        $z = new StripeObject();
 
         $s->child = $z;
         $z->foo = 'a';
@@ -68,5 +68,41 @@ class ObjectTest extends TestCase
         $this->assertInternalType('array', $converted['child']);
         $this->assertArrayHasKey('foo', $converted['child']);
         $this->assertEquals('a', $converted['child']['foo']);
+    }
+
+    public function testNonexistentProperty()
+    {
+        $s = new StripeObject();
+        $this->assertNull($s->nonexistent);
+    }
+
+    public function testPropertyDoesNotExists()
+    {
+        $s = new StripeObject();
+        $this->assertNull($s['nonexistent']);
+    }
+
+    public function testJsonEncode()
+    {
+        // We can only JSON encode our objects in PHP 5.4+. 5.3 must use ->__toJSON()
+        if (version_compare(phpversion(), '5.4.0', '<')) {
+            return;
+        }
+
+        $s = new StripeObject();
+        $s->foo = 'a';
+
+        $this->assertEquals('{"foo":"a"}', json_encode($s->__toArray()));
+    }
+
+    public function testReplaceNewNestedUpdatable()
+    {
+        StripeObject::init(); // Populate the $nestedUpdatableAttributes Set
+        $s = new StripeObject();
+
+        $s->metadata = array('bar');
+        $this->assertSame($s->metadata, array('bar'));
+        $s->metadata = array('baz', 'qux');
+        $this->assertSame($s->metadata, array('baz', 'qux'));
     }
 }
