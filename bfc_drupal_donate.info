@@ -1,9 +1,10 @@
 name = BFC Drupal Donate
-description = Integrates Stripe and the Webform modules so admins can create donate forms using the Drupal interface.
+description = Integrates Stripe and the Webform modules so admins can create donate forms using the Drupal interface. NOTE: YOU MUST HAVE WEBFORM INSTALLED AND ENABLED BEFORE ENABLING THIS MODULE.
 core = 7.x
 
 dependencies[] = webform
-dependencies[] = php
 dependencies[] = jquery_update
+
+stylesheets[all][] = bfc_drupal_donate.css
  
 configure = admin/config/content/bfc_donate

@@ -6,6 +6,7 @@
      //alert(Drupal.settings.bfc_drupal_donate.custom_form_id);
      var pubkey = Drupal.settings.bfc_drupal_donate.stripe_publishable_key;
      var formID = Drupal.settings.bfc_drupal_donate.custom_form_id;
+
      Stripe.setPublishableKey(pubkey);
 
       jQuery(function($) {
@@ -33,7 +34,7 @@
           // response contains id and card, which contains additional card details
           var token = response.id;
           // Insert the token into the form so it gets submitted to the server
-          $form.find('.webform-component--stripe-token input').val(token);
+          $form.find('.webform-component--stripe-token input, #webform-component-stripe-token input').val(token);
           
           // Remove the credit card, CSV, and expiration values before submitting
           $form.find('#edit-submitted-payment-information-credit-card-number').val("****************");
