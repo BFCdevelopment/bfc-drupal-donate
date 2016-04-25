@@ -19,7 +19,7 @@ function bfc_drupal_donate_menu() {
 	return $items;
 }
 
-function bfc_drupal_donate_enable() {
+function bfc_drupal_donate_install() {
 
 	$node = new stdClass();
 	$node->type = 'webform';
@@ -210,6 +210,8 @@ function bfc_drupal_donate_enable() {
 
 	// Save the node.
 	node_save($node);
+
+//	echo $node->nid;
 
 //	$alias = "/donate-form";
 //	$path = drupal_lookup_path("source", $alias);

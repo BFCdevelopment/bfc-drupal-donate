@@ -1,5 +1,6 @@
 name = BFC Drupal Donate
-description = Integrates Stripe and the Webform modules so admins can create donate forms using the Drupal interface. NOTE: YOU MUST HAVE WEBFORM INSTALLED AND ENABLED BEFORE ENABLING THIS MODULE.
+description = Allows for easy integration with Stripe for secure payment processing, including a default user webform. **NOTE: You must have the most recent version of Webforms installed to use the default webform.
+
 core = 7.x
 
 dependencies[] = webform
