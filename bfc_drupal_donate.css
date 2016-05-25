@@ -33,3 +33,9 @@
 	overflow: hidden;
 	height: 1px;
 }
+.bfc-stripe-disabled {
+	background-color: gray; 
+}
+.bfc-stripe-error {
+	background-color: transparent;
+}

@@ -3,9 +3,11 @@
     attach: function (context, settings) {
      // This identifies your website in the createToken call below
 
-     //alert(Drupal.settings.bfc_drupal_donate.custom_form_id);
-     var pubkey = Drupal.settings.bfc_drupal_donate.stripe_publishable_key;
-     var formID = Drupal.settings.bfc_drupal_donate.custom_form_id;
+     var pubkey = Drupal.settings.bfc_drupal_donate.bfc_stripe_publishable_key;
+     var formID = Drupal.settings.bfc_drupal_donate.bfc_stripe_custom_form_id;
+
+     var submitMessage = "Please wait...";
+     var errorMessage = "Make Payment";
 
      Stripe.setPublishableKey(pubkey);
 
@@ -14,7 +16,7 @@
           var $form = $(this);
 
           // Disable the submit button to prevent repeated clicks
-          $form.find('input.form-submit').prop('disabled', true).css("background-color","gray").val("Please wait...");
+          $form.find('input.form-submit').prop('disabled', true).addClass("bfc-stripe-disabled").val(submitMessage);
 
           Stripe.card.createToken($form, stripeResponseHandler);
 
@@ -29,7 +31,7 @@
         if (response.error) {
           // Show the errors on the form
           $form.find('.webform-component--error-markup').text(response.error.message);
-          $form.find('.form-submit').prop('disabled', false).css("background-color","").val("Make Payment");
+          $form.find('.form-submit').prop('disabled', false).addClass('bfc-stripe-error').val(errorMessage);
         } else {
           // response contains id and card, which contains additional card details
           var token = response.id;
