@@ -31,7 +31,6 @@ function bfc_drupal_donate_install() {
 	$node->uid = 1;
 	$node->promote = 0;
 	$node->comment = 0;
-//	$node->path = array('alias' => 'donate-form', 'pathauto' => FALSE);
 
 	// Create the webform components.
 	$components = array(
@@ -210,36 +209,29 @@ function bfc_drupal_donate_install() {
 
 	// Save the node.
 	node_save($node);
-
-//	echo $node->nid;
-
-//	$alias = "/donate-form";
-//	$path = drupal_lookup_path("source", $alias);
-//	$webformid = menu_get_object("node", 1, $path);
-
 }
 
 function bfc_drupal_donate_form($form, &$form_state) {
-	$form['stripe_secret_key'] = array(
+	$form['bfc_stripe_secret_key'] = array(
 		'#type' => 'textfield',
 		'#title' => t('Stripe Secret Key'),
-		'#default_value' => variable_get('stripe_secret_key'),
+		'#default_value' => variable_get('bfc_stripe_secret_key'),
 		'#description' => t('Enter the Stripe Secret API key here. Remember to change this to your live secret key in production. <br> See your keys <a href="https://dashboard.stripe.com/account/apikeys" target="_blank">here</a>.'),
 		'#required' =>TRUE,	
 	);
 
-	$form['stripe_publishable_key'] = array(
+	$form['bfc_stripe_publishable_key'] = array(
 		'#type' => 'textfield',
 		'#title' => t('Stripe Publishable Key'),
-		'#default_value' => variable_get('stripe_publishable_key'),
+		'#default_value' => variable_get('bfc_stripe_publishable_key'),
 		'#description' => t('Enter the Stripe Publishable API key here. Remember to change this to your live publishable key in production. <br> See your keys <a href="https://dashboard.stripe.com/account/apikeys" target="_blank">here</a>.'),
 		'#required' =>TRUE,	
 	);
 
-	$form['custom_form_id'] = array(
+	$form['bfc_stripe_custom_form_id'] = array(
 		'#type' => 'textfield',
 		'#title' => t('Webform ID'),
-		'#default_value' => variable_get('custom_form_id'),
+		'#default_value' => variable_get('bfc_stripe_custom_form_id'),
 		'#maxlength' => 6,
 		'#description' => t('The module has created a default form for you to work off of. Unfortunately it is not yet fully automated, so you must manually enter the form ID here. In order to find the form ID, you must go to <a href="/admin/content" target="_blank">the Content section</a>, and find the webform entitled "Donate". When you follow the link to edit this form, you will see the number ID in the URL. Enter that ID number here, and then save the form. <br><br> The default form includes all the necessary fields required for base Stripe functionality. You may modify the form as needed, or you can create your own webform. In order to enable a new webform, you must update this field with the new form id number, which you can find in the edit form url.'),
 	);
@@ -248,8 +240,12 @@ function bfc_drupal_donate_form($form, &$form_state) {
 }
 
 function bfc_drupal_donate_form_alter(&$form, &$form_state, $form_id) {
-	$custom_form = "webform_client_form_" . variable_get('custom_form_id', '1');
+	$custom_form = "webform_client_form_" . variable_get('bfc_stripe_custom_form_id', '1');
 	if($form['#form_id'] == $custom_form ) :
+		if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
+		} else {
+			drupal_set_message('We strongly recommend configuring an SSL server to process this form.', $type='warning');
+		}
 		drupal_add_js('https://js.stripe.com/v2/', 'external');
 		drupal_add_js(drupal_get_path('module', 'bfc_drupal_donate') . "/bfc_drupal_donate.js", 'file');
 		$form['submitted']['payment_information']['credit_card_number']['#attributes']['data-stripe'] = "number";
@@ -257,8 +253,8 @@ function bfc_drupal_donate_form_alter(&$form, &$form_state, $form_id) {
 		$form['submitted']['payment_information']['expiration_date']['expiration_month']['#attributes']['data-stripe'] = "exp_month";
 		$form['submitted']['payment_information']['expiration_date']['expiration_year']['#attributes']['data-stripe'] = "exp_year";
 
-		drupal_add_js(array('bfc_drupal_donate' => array('stripe_publishable_key' => variable_get('stripe_publishable_key'))), 'setting');
-		drupal_add_js(array('bfc_drupal_donate' => array('custom_form_id' => variable_get('custom_form_id', '1'))), 'setting');
+		drupal_add_js(array('bfc_drupal_donate' => array('bfc_stripe_publishable_key' => variable_get('bfc_stripe_publishable_key'))), 'setting');
+		drupal_add_js(array('bfc_drupal_donate' => array('bfc_stripe_custom_form_id' => variable_get('bfc_stripe_custom_form_id', '1'))), 'setting');
 
 		$form['#submit'][] = 'bfc_drupal_donate_submit_handler';
 
@@ -266,9 +262,10 @@ function bfc_drupal_donate_form_alter(&$form, &$form_state, $form_id) {
 }
 
 function bfc_drupal_donate_submit_handler(&$form, &$form_state) {
-	$custom_form = "webform_client_form_" . variable_get('custom_form_id', '1');
-	$skey = variable_get('stripe_secret_key');
+	$custom_form = "webform_client_form_" . variable_get('bfc_stripe_custom_form_id', '1');
+	$skey = variable_get('bfc_stripe_secret_key');
 	if($form['#form_id'] == $custom_form ) :
+
 		require_once('stripe-php-library/init.php');
 
 		// Set your secret key: remember to change this to your live secret key in production
@@ -290,7 +287,7 @@ function bfc_drupal_donate_submit_handler(&$form, &$form_state) {
 			  	"name" => $custname,
 			  ),
 		  "receipt_email" => $email,
-		  "description" => "Example charge")
+		  "description" => "Stripe Web Donation")
 		);
 		} catch(\Stripe\Error\Card $e) {
 		  drupal_set_message("We are sorry, your card has been declined. Please return to the form and try again.", "error");

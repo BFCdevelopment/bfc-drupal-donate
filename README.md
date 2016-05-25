@@ -6,7 +6,7 @@ This is a starter module to help create donate forms with Stripe payment process
 
 2. Install and Enable the BFC Drupal Donate module, then follow the link to the configuration page (admin/config/content/bfc_donate).
 
-3. Enter in the Stripe API Keys (found in your Stripe Account settings) and the ID # of the webform you will be using to collect your user's information on your Drupal site (found on the Content page of your Drupal site, by following the url to edit the form: the ID # is in the edit url). We recommend using the default Donate form created by the module (entitle 'Donate'), as it includes all necessary fields to get Stripe working. Save your config settings.
+3. Enter in the Stripe API Keys (found in your Stripe Account settings) and the ID # of the webform you will be using to collect your user's information on your Drupal site (found on the Content page of your Drupal site, by following the url to edit the form: the ID # is in the edit url). We recommend using the default Donate form created by the module (entitled 'Donate'), as it includes all necessary fields to get Stripe working. Save your config settings.
 
 4. You can add fields and modify display settings for the default Donate form as needed. Do not change the form_key settings for the module-created fields (name, email, cc#, expiration date/month/year, cvc).
 
